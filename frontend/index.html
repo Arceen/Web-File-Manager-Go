@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Niloy's Computer</title>
+  <script src="./libs/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
+  <script src="https://unpkg.com/mustache@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+  <div hx-get="http://localhost:8005/volumes" hx-swap="innerHTML" hx-target="#another-one" hx-ext="client-side-templates" mustache-template="file-templates">
+    Put To Messages
+  </div>
+  <div>This is just a header. I will not change anytime soon</div>
+  <div id="another-one">
+    Fake Data
+    <template id="file-templates">
+      <ul>
+        {{#.}}
+          <li>
+            <div class="shrink-2"> {{name}} </div>- {{date_created}} - {{file_size}}
+          </li>
+        {{/.}}
+      </ul>
+    </template>
+  </div>
+  <div class="p-6 max-w-sm mx-auto bg-white rounded-xl shadow-lg flex items-center space-x-4">
+    <div class="shrink-0">
+      <img class="h-12 w-12" src="/img/logo.svg" alt="ChitChat Logo">
+    </div>
+    <div>
+      <div class="text-xl font-medium text-black">ChitChat</div>
+      <p class="text-slate-500">You have a new message!</p>
+    </div>
+  </div>
+  <ul>
+    <li class="p-6 flex-col items-center rounded-xl
+    shadow-md  bg-gray-100">
+      <div class="shrink-2"> photo.jpg </div>
+      <div class="text-sm text-slate-500">2023-11-24T12:21:26.2957758+06:00</div> 13127
+    </li>
+
+  </ul>
+
+</body>
+
+</html>
