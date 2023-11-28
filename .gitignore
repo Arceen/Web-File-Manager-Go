@@ -1,0 +1,7 @@
+# .gitignore
+
+# Exclude .air.toml file
+.air.toml
+
+# Exclude tmp folder
+/tmp/

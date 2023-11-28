@@ -3,6 +3,7 @@ package main
 import (
 	"backend/utils"
 	"fmt"
+	"image/png"
 	"io"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/kbinani/screenshot"
 )
 
 func getAllFiles(c *gin.Context) {
@@ -20,7 +22,7 @@ func getAllFiles(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println(requestBody["path"])
+	// fmt.Println(requestBody["path"])
 	path := requestBody["path"]
 	if path == "" {
 		// If no path parameter is provided, list volumes
@@ -59,14 +61,13 @@ func getVolumes() ([]string, error) {
 
 	return volumes, nil
 }
-
 func serveFile(c *gin.Context) {
 	var requestBody map[string]string
 	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println(requestBody["path"])
+
 	filePath := requestBody["path"]
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -74,8 +75,6 @@ func serveFile(c *gin.Context) {
 		return
 	}
 	defer file.Close()
-
-	c.Header("Content-Disposition", "inline")
 
 	io.Copy(c.Writer, file)
 }
@@ -127,20 +126,55 @@ func getFilesInDir(dirPath string) ([]utils.FormattedFile, []utils.FormattedFold
 	return utils.FormattedFiles(files), utils.FormattedFolders(folders), nil
 }
 
+func executeCommand(c *gin.Context) {
+	var requestBody map[string]string
+	fmt.Println("Here comes to executeCommand")
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	fmt.Println(requestBody)
+	command := string(requestBody["command"])
+	fmt.Println(command)
+	output, err := utils.ExecuteCommand(command)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Error executing command: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"output": output})
+}
+
+func getScreenshot(c *gin.Context) {
+	img, err := screenshot.CaptureDisplay(0)
+	if err != nil {
+		fmt.Printf("Failed to capture screen: %v\n", err)
+		return
+	}
+	err = png.Encode(c.Writer, img)
+	if err != nil {
+		fmt.Println("Screenshot can't be sent")
+	} else {
+		fmt.Println("Screenshot sent")
+	}
+}
+
 func main() {
 	router := gin.Default()
 
 	// Configuration of CORS to serve on specific ports and allow all headers (for htmx)
 	corsMiddlewareConfig := cors.New(cors.Config{
-		AllowOrigins: []string{"http://127.0.0.1:5500", "http://127.0.0.1:3000"},
+		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"PUT", "POST", "GET", "OPTIONS", "DELETE"},
 		AllowHeaders: []string{"*"},
 	})
 	router.Use(corsMiddlewareConfig)
 
 	// Define the endpoint for getting the list of files
-	router.GET("/files/", getAllFiles)
-	router.GET("/download/", serveFile)
+	router.POST("/files/", getAllFiles)
+	router.POST("/download/", serveFile)
+	router.POST("/execute/", executeCommand)
+	router.GET("/screenshot/", getScreenshot)
 	port := 8005
 	fmt.Printf("Starting file server on port %d...\n", port)
 	err := router.Run(fmt.Sprintf(":%d", port))
